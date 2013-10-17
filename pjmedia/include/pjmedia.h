@@ -76,6 +76,7 @@
 #include <pjmedia/wav_port.h>
 #include <pjmedia/wave.h>
 #include <pjmedia/wsola.h>
+#include <pjmedia/opus_port.h>
 
 #endif	/* __PJMEDIA_H__ */
 

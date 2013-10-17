@@ -1273,6 +1273,7 @@ PJ_DEF(pj_status_t) pjsua_recorder_create( const pj_str_t *filename,
 	FMT_UNKNOWN,
 	FMT_WAV,
 	FMT_MP3,
+        FMT_OPUS,
     };
     unsigned slot, file_id;
     char path[PJ_MAXPATH];
@@ -1308,6 +1309,8 @@ PJ_DEF(pj_status_t) pjsua_recorder_create( const pj_str_t *filename,
 	file_format = FMT_WAV;
     else if (pj_stricmp2(&ext, ".mp3") == 0)
 	file_format = FMT_MP3;
+    else if (pj_stricmp2(&ext, "opus") == 0)
+        file_format = FMT_OPUS;
     else {
 	PJ_LOG(1,(THIS_FILE, "pjsua_recorder_create() error: unable to "
 			     "determine file format for %.*s",
@@ -1346,7 +1349,16 @@ PJ_DEF(pj_status_t) pjsua_recorder_create( const pj_str_t *filename,
 						pjsua_var.mconf_cfg.samples_per_frame,
 						pjsua_var.mconf_cfg.bits_per_sample,
 						options, 0, &port);
-    } else {
+    } 
+    else if (file_format == FMT_OPUS) {
+    status = pjmedia_opus_writer_port_create(pool, path,
+						pjsua_var.media_cfg.clock_rate,
+						pjsua_var.mconf_cfg.channel_count,
+						pjsua_var.mconf_cfg.samples_per_frame,
+						pjsua_var.mconf_cfg.bits_per_sample,
+						options, 0, &port);
+    }
+    else {
 	PJ_UNUSED_ARG(enc_param);
 	port = NULL;
 	status = PJ_ENOTSUP;

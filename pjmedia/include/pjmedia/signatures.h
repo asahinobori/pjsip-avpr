@@ -163,6 +163,7 @@ PJ_INLINE(const char*) pjmedia_sig_name(pjmedia_obj_sig sig, char buf[])
 #define PJMEDIA_SIG_PORT_WAV_PLAYER	PJMEDIA_SIG_CLASS_PORT_AUD('W','P')
 #define PJMEDIA_SIG_PORT_WAV_PLAYLIST	PJMEDIA_SIG_CLASS_PORT_AUD('W','Y')
 #define PJMEDIA_SIG_PORT_WAV_WRITER	PJMEDIA_SIG_CLASS_PORT_AUD('W','W')
+#define PJMEDIA_SIG_PORT_OPUS_WRITER    PJMEDIA_SIG_CLASS_PORT_AUD('O','W')
 
 
 /*************************************************************************
