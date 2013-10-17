@@ -96,6 +96,12 @@
 #   define PJMEDIA_HAS_G722_CODEC    1
 #endif
 
+/**
+ * Unless specified otherwise, Opus codec is included by default.
+ */
+#ifndef PJMEDIA_HAS_OPUS_CODEC
+#   define PJMEDIA_HAS_OPUS_CODEC    1
+#endif
 
 /**
  * Default G.722 codec encoder and decoder level adjustment. The G.722
