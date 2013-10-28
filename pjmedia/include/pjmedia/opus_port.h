@@ -11,6 +11,40 @@
 #include <opus_multistream.h>
 #include <pjmedia/opus_header.h>
 
+/**
+ * @defgroup PJMEDIA_FILE_PLAY OPUS File Player
+ * @ingroup PJMEDIA_PORT
+ * @brief Audio playback from OPUS file
+ * @{
+ */
+
+/**
+ * Create a media port to play streams from a OPUS file.
+ *
+ * @param pool		Pool to create memory buffers for this port.
+ * @param filename	File name to open.
+ * @param ptime		The duration (in miliseconds) of each frame read
+ *			from this port. If the value is zero, the default
+ *			duration (20ms) will be used.
+ * @param flags		Port creation flags.
+ * @param buff_size	Buffer size to be allocated. If the value is zero or
+ *			negative, the port will use default buffer size (which
+ *			is about 4KB).
+ * @param p_port	Pointer to receive the file port instance.
+ *
+ * @return		PJ_SUCCESS on success.
+ */
+PJ_DECL(pj_status_t) pjmedia_opus_player_port_create( pj_pool_t *pool,
+						     const char *filename,
+						     unsigned ptime,
+						     unsigned flags,
+						     pj_ssize_t buff_size,
+						     pjmedia_port **p_port );
+
+/**
+ * @}
+ */
+
 typedef long (*audio_read_func)(void *src, float *buffer, int samples);
 
 typedef struct

@@ -1017,6 +1017,7 @@ PJ_DEF(pj_status_t) pjsua_player_create( const pj_str_t *filename,
 {
     unsigned slot, file_id;
     char path[PJ_MAXPATH];
+    pj_str_t ext;
     pj_pool_t *pool = NULL;
     pjmedia_port *port;
     pj_status_t status = PJ_SUCCESS;
@@ -1051,12 +1052,26 @@ PJ_DEF(pj_status_t) pjsua_player_create( const pj_str_t *filename,
 	goto on_error;
     }
 
-    status = pjmedia_wav_player_port_create(
-				    pool, path,
-				    pjsua_var.mconf_cfg.samples_per_frame *
-				    1000 / pjsua_var.media_cfg.channel_count /
-				    pjsua_var.media_cfg.clock_rate,
-				    options, 0, &port);
+    /* Since now I add the opus player for pjmedia, so here we
+     * determine the file format temporally,thought we still use the wav param.
+     */
+    ext.ptr = filename->ptr + filename->slen -4;
+    ext.slen = 4;
+
+    if (pj_stricmp2(&ext, ".wav") == 0)
+      status = pjmedia_wav_player_port_create(
+				      pool, path,
+				      pjsua_var.mconf_cfg.samples_per_frame *
+				      1000 / pjsua_var.media_cfg.channel_count /
+				      pjsua_var.media_cfg.clock_rate,
+				      options, 0, &port);
+    else
+      status = pjmedia_opus_player_port_create(
+				      pool, path,
+				      pjsua_var.mconf_cfg.samples_per_frame *
+				      1000 / pjsua_var.media_cfg.channel_count /
+				      pjsua_var.media_cfg.clock_rate,
+				      options, 0, &port);
     if (status != PJ_SUCCESS) {
 	pjsua_perror(THIS_FILE, "Unable to open file for playback", status);
 	goto on_error;
