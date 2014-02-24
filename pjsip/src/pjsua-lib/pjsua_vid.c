@@ -82,6 +82,15 @@ pj_status_t pjsua_vid_subsys_init(void)
     }
 #endif
 
+#if PJMEDIA_HAS_VIDEO && PJMEDIA_HAS_VPX_CODEC
+    status = pjmedia_codec_vpx_init(NULL, &pjsua_var.cp.factory);
+    if (status != PJ_SUCCESS) {
+	PJ_PERROR(1,(THIS_FILE, status,
+		     "Error initializing vpx library"));
+	goto on_error;
+    }
+#endif
+
     status = pjmedia_vid_dev_subsys_init(&pjsua_var.cp.factory);
     if (status != PJ_SUCCESS) {
 	PJ_PERROR(1,(THIS_FILE, status,

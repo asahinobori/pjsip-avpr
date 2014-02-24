@@ -463,6 +463,24 @@
 #endif
 
 /**
+ * Enable VPX codec (requires libvpx).
+ *
+ * Default: 1
+ */
+#ifndef PJMEDIA_HAS_VPX_CODEC
+#   define PJMEDIA_HAS_VPX_CODEC 1
+#endif
+
+/**
+ * Enable FFMPEG VPX codec (requires libvpx).
+ *
+ * Default: 1
+ */
+#ifndef PJMEDIA_HAS_FFMPEG_CODEC_VP8
+#   define PJMEDIA_HAS_FFMPEG_CODEC_VP8  PJMEDIA_HAS_FFMPEG_VID_CODEC
+#endif
+
+/**
  * @}
  */
 

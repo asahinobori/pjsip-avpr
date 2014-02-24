@@ -62,17 +62,18 @@ static const struct ffmpeg_fmt_table_t
 static const struct ffmpeg_codec_table_t
 {
     pjmedia_format_id	id;
-    enum CodecID	codec_id;
+    enum AVCodecID	codec_id;
 } ffmpeg_codec_table[] =
 {
-    {PJMEDIA_FORMAT_H261,	CODEC_ID_H261},
-    {PJMEDIA_FORMAT_H263,	CODEC_ID_H263},
-    {PJMEDIA_FORMAT_H263P,	CODEC_ID_H263P},
-    {PJMEDIA_FORMAT_H264,	CODEC_ID_H264},
-    {PJMEDIA_FORMAT_MPEG1VIDEO,	CODEC_ID_MPEG1VIDEO},
-    {PJMEDIA_FORMAT_MPEG2VIDEO, CODEC_ID_MPEG2VIDEO},
-    {PJMEDIA_FORMAT_MPEG4,	CODEC_ID_MPEG4},
-    {PJMEDIA_FORMAT_MJPEG,	CODEC_ID_MJPEG}
+    {PJMEDIA_FORMAT_H261,	AV_CODEC_ID_H261},
+    {PJMEDIA_FORMAT_H263,	AV_CODEC_ID_H263},
+    {PJMEDIA_FORMAT_H263P,	AV_CODEC_ID_H263P},
+    {PJMEDIA_FORMAT_H264,	AV_CODEC_ID_H264},
+    {PJMEDIA_FORMAT_VP8,        AV_CODEC_ID_VP8},
+    {PJMEDIA_FORMAT_MPEG1VIDEO,	AV_CODEC_ID_MPEG1VIDEO},
+    {PJMEDIA_FORMAT_MPEG2VIDEO, AV_CODEC_ID_MPEG2VIDEO},
+    {PJMEDIA_FORMAT_MPEG4,	AV_CODEC_ID_MPEG4},
+    {PJMEDIA_FORMAT_MJPEG,	AV_CODEC_ID_MJPEG}
 };
 
 static int pjmedia_ffmpeg_ref_cnt;
@@ -165,7 +166,7 @@ pj_status_t PixelFormat_to_pjmedia_format_id(enum PixelFormat pf,
 }
 
 pj_status_t pjmedia_format_id_to_CodecID(pjmedia_format_id fmt_id,
-					 enum CodecID *codec_id)
+					 enum AVCodecID *codec_id)
 {
     unsigned i;
     for (i=0; i<PJ_ARRAY_SIZE(ffmpeg_codec_table); ++i) {
@@ -180,7 +181,7 @@ pj_status_t pjmedia_format_id_to_CodecID(pjmedia_format_id fmt_id,
     return PJ_ENOTFOUND;
 }
 
-pj_status_t CodecID_to_pjmedia_format_id(enum CodecID codec_id,
+pj_status_t CodecID_to_pjmedia_format_id(enum AVCodecID codec_id,
 					 pjmedia_format_id *fmt_id)
 {
     unsigned i;

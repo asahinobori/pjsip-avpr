@@ -116,6 +116,8 @@ enum pjmedia_video_pt
      PJMEDIA_RTP_PT_H264_RSV2,
      PJMEDIA_RTP_PT_H264_RSV3,
      PJMEDIA_RTP_PT_H264_RSV4,
+     PJMEDIA_RTP_PT_VP8_WEBM,  // VP8 Codec from Google WebM Project -> libvpx
+     PJMEDIA_RTP_PT_VP8,       // VP8 Codec from Google WebM Project but managed by ffmpeg
 
      /* Caution!
       * Ensure the value of the last pt above is <= 127.

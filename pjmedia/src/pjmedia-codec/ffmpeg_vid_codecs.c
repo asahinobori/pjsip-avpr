@@ -19,6 +19,7 @@
 #include <pjmedia-codec/ffmpeg_vid_codecs.h>
 #include <pjmedia-codec/h263_packetizer.h>
 #include <pjmedia-codec/h264_packetizer.h>
+#include <pjmedia-codec/vp8_packetizer.h>
 #include <pjmedia/errno.h>
 #include <pjmedia/vid_codec_util.h>
 #include <pj/assert.h>
@@ -279,6 +280,11 @@ static pj_status_t h263_preopen(ffmpeg_private *ff);
 static FUNC_PACKETIZE(h263_packetize);
 static FUNC_UNPACKETIZE(h263_unpacketize);
 
+#if PJMEDIA_HAS_FFMPEG_CODEC_VP8
+static pj_status_t vp8_preopen(ffmpeg_private *ff);
+static FUNC_PACKETIZE(vp8_packetize);
+static FUNC_UNPACKETIZE(vp8_unpacketize);
+#endif
 
 /* Internal codec info */
 static ffmpeg_codec_desc codec_desc[] =
@@ -305,6 +311,15 @@ static ffmpeg_codec_desc codec_desc[] =
 	&h263_packetize, &h263_unpacketize, &h263_preopen, NULL, NULL,
 	{2, { {{"CIF",3},   {"1",1}}, 
 	      {{"QCIF",4},  {"1",1}}, } },
+    },
+#endif
+
+#if PJMEDIA_HAS_FFMPEG_CODEC_VP8
+    {
+      {PJMEDIA_FORMAT_VP8, PJMEDIA_RTP_PT_VP8, {"FVP8",4},{"FFmpeg WebM Project VP8",23}},
+      PJMEDIA_FORMAT_VP8,
+      {640, 480}, {30, 1}, 1024*1000, 1024*1000,
+      &vp8_packetize, &vp8_unpacketize, &vp8_preopen,
     },
 #endif
 
@@ -548,6 +563,63 @@ static FUNC_UNPACKETIZE(h263_unpacketize)
 }
 
 #endif /* PJMEDIA_HAS_FFMPEG_CODEC_H263P */
+
+#if PJMEDIA_HAS_FFMPEG_CODEC_VP8
+
+typedef struct vp8_data
+{
+  pjmedia_vp8_packetizer *pktz;
+} vp8_data;
+
+/* VP8 pre-open */
+static pj_status_t vp8_preopen(ffmpeg_private *ff)
+{
+  vp8_data *data;
+  pjmedia_vp8_packetizer_cfg pktz_cfg;
+  pj_status_t status;
+
+  data = PJ_POOL_ZALLOC_T(ff->pool, vp8_data);
+  ff->data = data;
+
+  /* Create packetizer */
+  pktz_cfg.mtu = ff->param.enc_mtu;
+  pktz_cfg.mode = PJMEDIA_VP8_PACKETIZER_MODE_DRAFTVP8;
+  status = pjmedia_vp8_packetizer_create(ff->pool, &pktz_cfg, &data->pktz);
+  if (status != PJ_SUCCESS)
+    return status;
+
+  /* Override generic params after applying SDP fmtp */
+  if (ff->param.dir & PJMEDIA_DIR_ENCODING) {
+    pjmedia_video_format_detail *vfd;
+    AVCodecContext *ctx = ff->enc_ctx;
+
+    vfd = pjmedia_format_get_video_format_detail(&ff->param.enc_fmt,
+                             PJ_TRUE);
+
+    ctx->width = vfd->size.w;
+    ctx->height = vfd->size.h;
+    ctx->time_base.num =vfd->fps.denum;
+    ctx->time_base.den = vfd->fps.num;
+  }
+
+  return status;
+}
+
+static FUNC_PACKETIZE(vp8_packetize)
+{
+  vp8_data *data = (vp8_data*)ff->data;
+  return pjmedia_vp8_packetize(data->pktz, bits, bits_len, bits_pos,
+                payload, payload_len);
+}
+
+static FUNC_UNPACKETIZE(vp8_unpacketize)
+{
+  vp8_data *data = (vp8_data*)ff->data;
+  return pjmedia_vp8_unpacketize(data->pktz, payload, payload_len,
+                bits, bits_len, bits_pos);
+}
+
+#endif /* PJMEDIA_HAS_FFMPEG_CODEC_VP8 */
 
 
 static const ffmpeg_codec_desc* find_codec_desc_by_info(
