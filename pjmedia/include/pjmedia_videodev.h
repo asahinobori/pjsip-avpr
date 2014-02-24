@@ -27,5 +27,6 @@
 #include <pjmedia-videodev/videodev.h>
 #include <pjmedia-videodev/videodev_imp.h>
 #include <pjmedia-videodev/avi_dev.h>
+#include <pjmedia-videodev/webm_dev.h>
 
 #endif	/* __PJMEDIA_VIDEODEV_H__ */

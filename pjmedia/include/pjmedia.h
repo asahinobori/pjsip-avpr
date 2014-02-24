@@ -77,6 +77,7 @@
 #include <pjmedia/wave.h>
 #include <pjmedia/wsola.h>
 #include <pjmedia/opus_port.h>
+#include <pjmedia/webm_stream.h>
 
 #endif	/* __PJMEDIA_H__ */
 

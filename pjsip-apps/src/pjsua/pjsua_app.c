@@ -44,6 +44,7 @@
 #define RING_INTERVAL	    3000
 
 #define MAX_AVI             4
+#define MAX_WEBM            4
 
 /* Call specific data */
 struct call_data
@@ -146,6 +147,16 @@ static struct app_config
     } avi[MAX_AVI];
     pj_bool_t               avi_auto_play;
     int			    avi_def_idx;
+
+    /* WEBM to play */
+    unsigned                 webm_cnt;
+    struct {
+      pj_str_t               path;
+      pjmedia_vid_dev_index  dev_id;
+      pjsua_conf_port_id     slot;
+    } webm[MAX_WEBM];
+    pj_bool_t                webm_auto_play;
+    int                      webm_def_idx;
 
 } app_config;
 
@@ -347,6 +358,8 @@ static void usage(void)
     puts  ("  --vrender-dev=id    Video render device ID (default=-2)");
     puts  ("  --play-avi=FILE     Load this AVI as virtual capture device");
     puts  ("  --auto-play-avi     Automatically play the AVI media to call");
+    puts  ("  --play-webm=FILE    Load this WEBM as virtual capture device");
+    puts  ("  --auto-play-webm    Automatically play the WEBM media to call");
 #endif
 
     puts  ("");
@@ -430,6 +443,7 @@ static void default_config(struct app_config *cfg)
     cfg->aud_cnt = 1;
 
     cfg->avi_def_idx = PJSUA_INVALID_ID;
+    cfg->webm_def_idx = PJSUA_INVALID_ID;
 }
 
 
@@ -597,7 +611,8 @@ static pj_status_t parse_args(int argc, char *argv[],
 	   OPT_DISABLE_STUN, OPT_NO_FORCE_LR,
 	   OPT_TIMER, OPT_TIMER_SE, OPT_TIMER_MIN_SE,
 	   OPT_VIDEO, OPT_EXTRA_AUDIO,
-	   OPT_VCAPTURE_DEV, OPT_VRENDER_DEV, OPT_PLAY_AVI, OPT_AUTO_PLAY_AVI
+	   OPT_VCAPTURE_DEV, OPT_VRENDER_DEV, OPT_PLAY_AVI, OPT_AUTO_PLAY_AVI,
+           OPT_PLAY_WEBM, OPT_AUTO_PLAY_WEBM
     };
     struct pj_getopt_option long_options[] = {
 	{ "config-file",1, 0, OPT_CONFIG_FILE},
@@ -726,6 +741,8 @@ static pj_status_t parse_args(int argc, char *argv[],
 	{ "vrender-dev",  1, 0, OPT_VRENDER_DEV},
 	{ "play-avi",	1, 0, OPT_PLAY_AVI},
 	{ "auto-play-avi", 0, 0, OPT_AUTO_PLAY_AVI},
+	{ "play-webm",	1, 0, OPT_PLAY_WEBM},
+	{ "auto-play-webm", 0, 0, OPT_AUTO_PLAY_WEBM},
 	{ NULL, 0, 0, 0}
     };
     pj_status_t status;
@@ -1550,6 +1567,18 @@ static pj_status_t parse_args(int argc, char *argv[],
 	    app_config.avi_auto_play = PJ_TRUE;
 	    break;
 
+	case OPT_PLAY_WEBM:
+	    if (app_config.webm_cnt >= MAX_WEBM) {
+	        PJ_LOG(1,(THIS_FILE, "Too many WEBMs"));
+	        return -1;
+	    }
+	    app_config.webm[app_config.webm_cnt++].path = pj_str(pj_optarg);
+	    break;
+	
+	case OPT_AUTO_PLAY_WEBM:
+	    app_config.webm_auto_play = PJ_TRUE;
+	    break;
+
 	default:
 	    PJ_LOG(1,(THIS_FILE, 
 		      "Argument \"%s\" is not valid. Use --help to see help",
@@ -2155,6 +2184,14 @@ static int write_settings(const struct app_config *config,
     }
     if (config->avi_auto_play) {
 	pj_ansi_sprintf(line, "--auto-play-avi\n");
+	pj_strcat2(&cfg, line);
+    }
+    for (i=0; i<config->webm_cnt; ++i) {
+	pj_ansi_sprintf(line, "--play-webm %s\n", config->webm[i].path.ptr);
+	pj_strcat2(&cfg, line);
+    }
+    if (config->webm_auto_play) {
+	pj_ansi_sprintf(line, "--auto-play-webm\n");
 	pj_strcat2(&cfg, line);
     }
 
@@ -2870,6 +2907,16 @@ static void on_call_audio_state(pjsua_call_info *ci, unsigned mi,
 	    app_config.avi[app_config.avi_def_idx].slot != PJSUA_INVALID_ID)
 	{
 	    pjsua_conf_connect(app_config.avi[app_config.avi_def_idx].slot,
+			       call_conf_slot);
+	    disconnect_mic = PJ_TRUE;
+	}
+
+	/* Stream WEBM, if desired */
+	if (app_config.webm_auto_play &&
+	    app_config.webm_def_idx != PJSUA_INVALID_ID &&
+	    app_config.webm[app_config.webm_def_idx].slot != PJSUA_INVALID_ID)
+	{
+	    pjsua_conf_connect(app_config.webm[app_config.webm_def_idx].slot,
 			       call_conf_slot);
 	    disconnect_mic = PJ_TRUE;
 	}
@@ -4074,6 +4121,13 @@ static void app_config_init_video(pjsua_acc_config *acc_cfg)
 	app_config.avi[app_config.avi_def_idx].dev_id != PJMEDIA_VID_INVALID_DEV)
     {
 	acc_cfg->vid_cap_dev = app_config.avi[app_config.avi_def_idx].dev_id;
+    }
+
+    if (app_config.webm_auto_play &&
+	app_config.webm_def_idx != PJSUA_INVALID_ID &&
+	app_config.webm[app_config.webm_def_idx].dev_id != PJMEDIA_VID_INVALID_DEV)
+    {
+	acc_cfg->vid_cap_dev = app_config.webm[app_config.webm_def_idx].dev_id;
     }
 }
 
@@ -5858,6 +5912,83 @@ pj_status_t app_init(int argc, char *argv[])
 #endif	/* PJMEDIA_VIDEO_DEV_HAS_AVI */
     }
 
+    /* Create WEBM player virtual devices */
+    if (app_config.webm_cnt) {
+#if PJMEDIA_HAS_VIDEO && PJMEDIA_VIDEO_DEV_HAS_WEBM
+      pjmedia_vid_dev_factory *webm_factory;
+
+      status = pjmedia_webm_dev_create_factory(pjsua_get_pool_factory(),
+                                               app_config.webm_cnt,
+                                               &webm_factory);
+      if (status != PJ_SUCCESS) {
+        PJ_PERROR(1,(THIS_FILE, status, "Error creating WEBM factory"));
+        goto on_error;
+      }
+
+      for (i=0; i<app_config.webm_cnt; ++i) {
+        pjmedia_webm_dev_param webmdp;
+        pjmedia_vid_dev_index  webmdid;
+        unsigned strm_idx, strm_cnt;
+
+        app_config.webm[i].dev_id = PJMEDIA_VID_INVALID_DEV;
+        app_config.webm[i].slot = PJSUA_INVALID_ID;
+
+        pjmedia_webm_dev_param_default(&webmdp);
+        webmdp.path = app_config.webm[i].path;
+
+        status = pjmedia_webm_dev_alloc(webm_factory, &webmdp, &webmdid);
+        if (status != PJ_SUCCESS) {
+          PJ_PERROR(1,(THIS_FILE, status,
+                    "Error creating WEBM player for %.*s",
+                    (int)webmdp.path.slen, webmdp.path.ptr));
+          goto on_error;
+        }
+
+        PJ_LOG(4,(THIS_FILE, "WEBM player %.*s created, dev_id=%d",
+              (int)webmdp.title.slen, webmdp.title.ptr, webmdid));
+
+        app_config.webm[i].dev_id = webmdid;
+        if (app_config.webm_def_idx == PJSUA_INVALID_ID)
+          app_config.webm_def_idx = i;
+
+        strm_cnt = pjmedia_webm_streams_get_num_streams(webmdp.webm_streams);
+        for (strm_idx=0; strm_idx<strm_cnt; ++strm_idx) {
+          pjmedia_port *aud;
+          pjmedia_format *fmt;
+          pjsua_conf_port_id slot;
+          char fmt_name[5];
+
+          aud = pjmedia_webm_streams_get_stream(webmdp.webm_streams, strm_idx);
+
+          fmt = &aud->info.fmt;
+
+          pjmedia_fourcc_name(fmt->id, fmt_name);
+
+          if (fmt->id == PJMEDIA_FORMAT_PCM) {
+            status = pjsua_conf_add_port(app_config.pool, aud,
+                                         &slot);
+            if (status == PJ_SUCCESS) {
+              PJ_LOG(4,(THIS_FILE,
+                "WEBM %.*s: audio added to slot %d",
+                (int)webmdp.title.slen, webmdp.title.ptr,
+                slot));
+              app_config.webm[i].slot = slot;
+            }
+          } else {
+		      PJ_LOG(4,(THIS_FILE,
+			        "WEBM %.*s: audio ignored, format=%s",
+			        (int)webmdp.title.slen, webmdp.title.ptr,
+			        fmt_name));
+          }
+        }
+      }
+
+#else
+    PJ_LOG(2,(THIS_FILE,
+   		  "Warning: --play-webm is ignored because WEBM is disabled"));
+#endif	/* PJMEDIA_VIDEO_DEV_HAS_WEBM */ 
+    }
+
     /* Add UDP transport unless it's disabled. */
     if (!app_config.no_udp) {
 	pjsua_acc_id aid;
@@ -6193,6 +6324,16 @@ pj_status_t app_destroy(void)
 #if PJMEDIA_HAS_VIDEO && PJMEDIA_VIDEO_DEV_HAS_AVI
 	if (app_config.avi[i].dev_id != PJMEDIA_VID_INVALID_DEV)
 	    pjmedia_avi_dev_free(app_config.avi[i].dev_id);
+#endif
+    }
+
+    /* Close webm devs and ports */
+    for (i=0; i<app_config.webm_cnt; ++i) {
+	if (app_config.webm[i].slot != PJSUA_INVALID_ID)
+      pjsua_conf_remove_port(app_config.webm[i].slot);
+#if PJMEDIA_HAS_VIDEO && PJMEDIA_VIDEO_DEV_HAS_WEBM
+	if (app_config.webm[i].dev_id != PJMEDIA_VID_INVALID_DEV)
+	    pjmedia_webm_dev_free(app_config.webm[i].dev_id);
 #endif
     }
 

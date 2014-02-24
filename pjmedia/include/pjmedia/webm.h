@@ -1,0 +1,10 @@
+#ifndef __PJMEDIA_WEBM_H__
+#define __PJMEDIA_WEBM_H__
+
+PJ_BEGIN_DECL
+
+#define PJMEDIA_WEBM_MAX_NUM_STREAMS 4
+
+PJ_END_DECL
+
+#endif	/* __PJMEDIA_WEBM_H__ */
