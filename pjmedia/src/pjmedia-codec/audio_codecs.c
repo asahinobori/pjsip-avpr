@@ -121,9 +121,6 @@ pjmedia_codec_register_audio_codecs(pjmedia_endpt *endpt,
 	return status;
 #endif
 
-    return PJ_SUCCESS;
-}
-
 #if PJMEDIA_HAS_OPUS_CODEC
     /* Register OPUS */
     status = pjmedia_codec_opus_init(endpt);

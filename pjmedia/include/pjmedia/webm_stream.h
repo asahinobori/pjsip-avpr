@@ -4,6 +4,7 @@
 /**
  * @file webm_stream.h
  * @brief WEBM file player.
+ * @brief WEBM file writer.
  */
 #include <pjmedia/port.h>
 
@@ -34,6 +35,22 @@ typedef struct pjmedia_webm_streams pjmedia_webm_streams;
  */
 PJ_DECL(pj_status_t)
 pjmedia_webm_player_create_streams(pj_pool_t *pool,
+                                  const char *filename,
+                                  unsigned flags,
+                                  pjmedia_webm_streams **p_streams);
+
+/**
+ * Create webm streams to write an WEBM file.
+ *
+ * @param pool		Pool to create the streams.
+ * @param filename	File name to open.
+ * @param flags		WebM streams creation flags.
+ * @param p_streams	Pointer to receive the webm streams instance.
+ *
+ * @return		PJ_SUCCESS on success.
+ */
+PJ_DECL(pj_status_t)
+pjmedia_webm_writer_create_streams(pj_pool_t *pool,
                                   const char *filename,
                                   unsigned flags,
                                   pjmedia_webm_streams **p_streams);

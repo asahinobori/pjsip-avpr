@@ -21,40 +21,39 @@ typedef struct webm_dev_strm webm_dev_strm;
 /* webm_ device info */
 struct webm_dev_info
 {
-    pjmedia_vid_dev_info	 info;
-
-    pj_pool_t			*pool;
-    pj_str_t			 fpath;
-    pj_str_t			 title;
-    pjmedia_webm_streams		*webm;
-    pjmedia_port                *vid;
-    webm_dev_strm		*strm;
-    pjmedia_vid_codec           *codec;
-    pj_uint8_t                  *enc_buf;
-    pj_size_t                    enc_buf_size;
+    pjmedia_vid_dev_info       info;
+    pj_pool_t                  *pool;
+    pj_str_t                   fpath;
+    pj_str_t                   title;
+    pjmedia_webm_streams       *webm;
+    pjmedia_port               *vid;
+    webm_dev_strm              *strm;
+    pjmedia_vid_codec          *codec;
+    pj_uint8_t                 *enc_buf;
+    pj_size_t                  enc_buf_size;
 };
 
 /* webm_factory */
 struct webm_factory
 {
-    pjmedia_vid_dev_factory	 base;
-    pj_pool_t			*pool;
-    pj_pool_factory		*pf;
+    pjmedia_vid_dev_factory  base;
+    pj_pool_t                *pool;
+    pj_pool_factory          *pf;
 
-    unsigned			 dev_count;
-    struct webm_dev_info		*dev_info;
+    unsigned                 dev_count;
+    struct webm_dev_info     *dev_info;
 };
 
 /* Video stream. */
 struct webm_dev_strm
 {
-    pjmedia_vid_dev_stream	     base;	    /**< Base stream	    */
-    pjmedia_vid_dev_param	     param;	    /**< Settings	    */
-    pj_pool_t			    *pool;          /**< Memory pool.       */
-    struct webm_dev_info		    *adi;
+    pjmedia_vid_dev_stream       base;        /**< Base stream	     */
+    pjmedia_vid_dev_param        param;       /**< Settings	         */
+    pj_pool_t                    *pool;       /**< Memory pool.      */
+    struct webm_dev_info         *wdi;
 
-    pjmedia_vid_dev_cb		     vid_cb;	    /**< Stream callback.   */
-    void			    *user_data;	    /**< Application data.  */
+    pjmedia_vid_dev_cb           vid_cb;      /**< Stream callback.  */
+    void                         *user_data;  /**< Application data. */
 };
 
 
@@ -91,7 +90,7 @@ static pj_status_t webm_dev_strm_start(pjmedia_vid_dev_stream *strm);
 static pj_status_t webm_dev_strm_stop(pjmedia_vid_dev_stream *strm);
 static pj_status_t webm_dev_strm_destroy(pjmedia_vid_dev_stream *strm);
 
-static void reset_dev_info(struct webm_dev_info *adi);
+static void reset_dev_info(struct webm_dev_info *wdi);
 
 /* Operations */
 static pjmedia_vid_dev_factory_op factory_op =
@@ -235,41 +234,41 @@ static pj_status_t webm_factory_default_param(pj_pool_t *pool,
 }
 
 /* reset dev info */
-static void reset_dev_info(struct webm_dev_info *adi)
+static void reset_dev_info(struct webm_dev_info *wdi)
 {
     /* Close webm streams */
-    if (adi->webm) {
+    if (wdi->webm) {
 	unsigned i, cnt;
 
-	cnt = pjmedia_webm_streams_get_num_streams(adi->webm);
+	cnt = pjmedia_webm_streams_get_num_streams(wdi->webm);
 	for (i=0; i<cnt; ++i) {
 	    pjmedia_webm_stream *as;
 
-	    as = pjmedia_webm_streams_get_stream(adi->webm, i);
+	    as = pjmedia_webm_streams_get_stream(wdi->webm, i);
 	    if (as) {
 		pjmedia_port *port;
 		port = pjmedia_webm_stream_get_port(as);
 		pjmedia_port_destroy(port);
 	    }
 	}
-	adi->webm = NULL;
+	wdi->webm = NULL;
     }
 
-    if (adi->codec) {
-        pjmedia_vid_codec_close(adi->codec);
-        adi->codec = NULL;
+    if (wdi->codec) {
+        pjmedia_vid_codec_close(wdi->codec);
+        wdi->codec = NULL;
     }
 
-    if (adi->pool)
-	pj_pool_release(adi->pool);
+    if (wdi->pool)
+	pj_pool_release(wdi->pool);
 
-    pj_bzero(adi, sizeof(*adi));
+    pj_bzero(wdi, sizeof(*wdi));
 
     /* Fill up with *dummy" device info */
-    pj_ansi_strncpy(adi->info.name, "WEBM Player", sizeof(adi->info.name)-1);
-    pj_ansi_strncpy(adi->info.driver, DRIVER_NAME, sizeof(adi->info.driver)-1);
-    adi->info.dir = PJMEDIA_DIR_CAPTURE;
-    adi->info.has_callback = PJ_FALSE;
+    pj_ansi_strncpy(wdi->info.name, "WEBM Player", sizeof(wdi->info.name)-1);
+    pj_ansi_strncpy(wdi->info.driver, DRIVER_NAME, sizeof(wdi->info.driver)-1);
+    wdi->info.dir = PJMEDIA_DIR_CAPTURE;
+    wdi->info.has_callback = PJ_FALSE;
 }
 
 /* API: release resources */
@@ -278,7 +277,7 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_free(pjmedia_vid_dev_index id)
     pjmedia_vid_dev_factory *f;
     struct webm_factory *cf;
     unsigned local_idx;
-    struct webm_dev_info *adi;
+    struct webm_dev_info *wdi;
     pj_status_t status;
 
     /* Lookup the factory and local device index */
@@ -292,14 +291,14 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_free(pjmedia_vid_dev_index id)
 
     /* Device index should be valid */
     PJ_ASSERT_RETURN(local_idx <= cf->dev_count, PJ_EBUG);
-    adi = &cf->dev_info[local_idx];
+    wdi = &cf->dev_info[local_idx];
 
     /* Cannot configure if stream is running */
-    if (adi->strm)
+    if (wdi->strm)
 	return PJ_EBUSY;
 
     /* Reset */
-    reset_dev_info(adi);
+    reset_dev_info(wdi);
     return PJ_SUCCESS;
 }
 
@@ -310,7 +309,7 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_get_param(pjmedia_vid_dev_index id,
     pjmedia_vid_dev_factory *f;
     struct webm_factory *cf;
     unsigned local_idx;
-    struct webm_dev_info *adi;
+    struct webm_dev_info *wdi;
     pj_status_t status;
 
     /* Lookup the factory and local device index */
@@ -324,12 +323,12 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_get_param(pjmedia_vid_dev_index id,
 
     /* Device index should be valid */
     PJ_ASSERT_RETURN(local_idx <= cf->dev_count, PJ_EBUG);
-    adi = &cf->dev_info[local_idx];
+    wdi = &cf->dev_info[local_idx];
 
     pj_bzero(prm, sizeof(*prm));
-    prm->path = adi->fpath;
-    prm->title = adi->title;
-    prm->webm_streams = adi->webm;
+    prm->path = wdi->fpath;
+    prm->title = wdi->title;
+    prm->webm_streams = wdi->webm;
 
     return PJ_SUCCESS;
 }
@@ -347,7 +346,7 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_alloc( pjmedia_vid_dev_factory *f,
     pjmedia_vid_dev_index id;
     struct webm_factory *cf = (struct webm_factory*)f;
     unsigned local_idx;
-    struct webm_dev_info *adi = NULL;
+    struct webm_dev_info *wdi = NULL;
     pjmedia_format webm_fmt;
     const pjmedia_video_format_info *vfi;
     pj_status_t status;
@@ -360,12 +359,12 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_alloc( pjmedia_vid_dev_factory *f,
     /* Get a free dev */
     for (local_idx=0; local_idx<cf->dev_count; ++local_idx) {
 	if (cf->dev_info[local_idx].webm == NULL) {
-	    adi = &cf->dev_info[local_idx];
+	    wdi = &cf->dev_info[local_idx];
 	    break;
 	}
     }
 
-    if (!adi)
+    if (!wdi)
 	return PJ_ETOOMANY;
 
     /* Convert local ID to global id */
@@ -374,34 +373,34 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_alloc( pjmedia_vid_dev_factory *f,
 	return status;
 
     /* Reset */
-    if (adi->pool) {
-	pj_pool_release(adi->pool);
+    if (wdi->pool) {
+	pj_pool_release(wdi->pool);
     }
-    pj_bzero(adi, sizeof(*adi));
+    pj_bzero(wdi, sizeof(*wdi));
 
     /* Reinit */
     PJ_ASSERT_RETURN(p->path.slen, PJ_EINVAL);
-    adi->pool = pj_pool_create(cf->pf, "webmdi%p", 512, 512, NULL);
+    wdi->pool = pj_pool_create(cf->pf, "webmdi%p", 512, 512, NULL);
 
 
     /* Open the WEBM */
-    pj_strdup_with_null(adi->pool, &adi->fpath, &p->path);
-    status = pjmedia_webm_player_create_streams(adi->pool, adi->fpath.ptr, 0,
-                                               &adi->webm);
+    pj_strdup_with_null(wdi->pool, &wdi->fpath, &p->path);
+    status = pjmedia_webm_player_create_streams(wdi->pool, wdi->fpath.ptr, 0,
+                                               &wdi->webm);
     if (status != PJ_SUCCESS) {
 	goto on_error;
     }
 
-    adi->vid = pjmedia_webm_streams_get_stream_by_media(adi->webm, 0,
+    wdi->vid = pjmedia_webm_streams_get_stream_by_media(wdi->webm, 0,
                                                        PJMEDIA_TYPE_VIDEO);
-    if (!adi->vid) {
+    if (!wdi->vid) {
 	status = PJMEDIA_EVID_BADFORMAT;
 	PJ_LOG(4,(THIS_FILE, "Error: cannot find video in WEBM %s",
-		adi->fpath.ptr));
+		wdi->fpath.ptr));
 	goto on_error;
     }
 
-    pjmedia_format_copy(&webm_fmt, &adi->vid->info.fmt);
+    pjmedia_format_copy(&webm_fmt, &wdi->vid->info.fmt);
     vfi = pjmedia_get_video_format_info(NULL, webm_fmt.id);
     /* Check whether the frame is encoded. */
     if (!vfi || vfi->bpp == 0) {
@@ -424,17 +423,17 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_alloc( pjmedia_vid_dev_factory *f,
 
         /* Open codec */
         status = pjmedia_vid_codec_mgr_alloc_codec(NULL, codec_info,
-                                                   &adi->codec);
+                                                   &wdi->codec);
         if (status != PJ_SUCCESS)
             goto on_error;
 
-        status = pjmedia_vid_codec_init(adi->codec, adi->pool);
+        status = pjmedia_vid_codec_init(wdi->codec, wdi->pool);
         if (status != PJ_SUCCESS)
             goto on_error;
 
         codec_param.dir = PJMEDIA_DIR_DECODING;
         codec_param.packing = PJMEDIA_VID_PACKING_WHOLE;
-        status = pjmedia_vid_codec_open(adi->codec, &codec_param);
+        status = pjmedia_vid_codec_open(wdi->codec, &codec_param);
         if (status != PJ_SUCCESS)
             goto on_error;
 
@@ -447,13 +446,13 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_alloc( pjmedia_vid_dev_factory *f,
 	if (status != PJ_SUCCESS)
 	    goto on_error;
 
-	adi->enc_buf = pj_pool_alloc(adi->pool, vafp.framebytes);
-	adi->enc_buf_size = vafp.framebytes;
+	wdi->enc_buf = pj_pool_alloc(wdi->pool, vafp.framebytes);
+	wdi->enc_buf_size = vafp.framebytes;
     }
 
     /* Calculate title */
     if (p->title.slen) {
-	pj_strdup_with_null(adi->pool, &adi->title, &p->title);
+	pj_strdup_with_null(wdi->pool, &wdi->title, &p->title);
     } else {
 	char *start = p->path.ptr + p->path.slen;
 	pj_str_t tmp;
@@ -465,36 +464,36 @@ PJ_DEF(pj_status_t) pjmedia_webm_dev_alloc( pjmedia_vid_dev_factory *f,
 	}
 	tmp.ptr = start + 1;
 	tmp.slen = p->path.ptr + p->path.slen - tmp.ptr;
-	pj_strdup_with_null(adi->pool, &adi->title, &tmp);
+	pj_strdup_with_null(wdi->pool, &wdi->title, &tmp);
     }
 
     /* Init device info */
-    pj_ansi_strncpy(adi->info.name, adi->title.ptr, sizeof(adi->info.name)-1);
-    pj_ansi_strncpy(adi->info.driver, DRIVER_NAME, sizeof(adi->info.driver)-1);
-    adi->info.dir = PJMEDIA_DIR_CAPTURE;
-    adi->info.has_callback = PJ_FALSE;
+    pj_ansi_strncpy(wdi->info.name, wdi->title.ptr, sizeof(wdi->info.name)-1);
+    pj_ansi_strncpy(wdi->info.driver, DRIVER_NAME, sizeof(wdi->info.driver)-1);
+    wdi->info.dir = PJMEDIA_DIR_CAPTURE;
+    wdi->info.has_callback = PJ_FALSE;
 
-    adi->info.caps = PJMEDIA_VID_DEV_CAP_FORMAT;
-    adi->info.fmt_cnt = 1;
-    pjmedia_format_copy(&adi->info.fmt[0], &webm_fmt);
+    wdi->info.caps = PJMEDIA_VID_DEV_CAP_FORMAT;
+    wdi->info.fmt_cnt = 1;
+    pjmedia_format_copy(&wdi->info.fmt[0], &webm_fmt);
 
     /* Set out vars */
     if (p_id)
 	*p_id = id;
-    p->webm_streams = adi->webm;
+    p->webm_streams = wdi->webm;
     if (p->title.slen == 0)
-	p->title = adi->title;
+	p->title = wdi->title;
 
     return PJ_SUCCESS;
 
 on_error:
-    if (adi->codec) {
-        pjmedia_vid_codec_close(adi->codec);
-        adi->codec = NULL;
+    if (wdi->codec) {
+        pjmedia_vid_codec_close(wdi->codec);
+        wdi->codec = NULL;
     }
-    if (adi->pool) {
-	pj_pool_release(adi->pool);
-	adi->pool = NULL;
+    if (wdi->pool) {
+	pj_pool_release(wdi->pool);
+	wdi->pool = NULL;
     }
     pjmedia_webm_dev_free(id);
     return status;
@@ -511,7 +510,7 @@ static pj_status_t webm_factory_create_stream(
 {
     struct webm_factory *cf = (struct webm_factory*)f;
     pj_pool_t *pool = NULL;
-    struct webm_dev_info *adi;
+    struct webm_dev_info *wdi;
     struct webm_dev_strm *strm;
 
     PJ_ASSERT_RETURN(f && param && p_vid_strm, PJ_EINVAL);
@@ -521,11 +520,11 @@ static pj_status_t webm_factory_create_stream(
 		     PJ_EINVAL);
 
     /* Device must have been configured with pjmedia_webm_dev_set_param() */
-    adi = &cf->dev_info[param->cap_id];
-    PJ_ASSERT_RETURN(adi->webm != NULL, PJ_EINVALIDOP);
+    wdi = &cf->dev_info[param->cap_id];
+    PJ_ASSERT_RETURN(wdi->webm != NULL, PJ_EINVALIDOP);
 
     /* Cannot create while stream is already active */
-    PJ_ASSERT_RETURN(adi->strm==NULL, PJ_EINVALIDOP);
+    PJ_ASSERT_RETURN(wdi->strm==NULL, PJ_EINVALIDOP);
 
     /* Create and initialize basic stream descriptor */
     pool = pj_pool_create(cf->pf, "webmdev%p", 512, 512, NULL);
@@ -536,13 +535,13 @@ static pj_status_t webm_factory_create_stream(
     strm->pool = pool;
     pj_memcpy(&strm->vid_cb, cb, sizeof(*cb));
     strm->user_data = user_data;
-    strm->adi = adi;
+    strm->wdi = wdi;
 
-    pjmedia_format_copy(&param->fmt, &adi->info.fmt[0]);
+    pjmedia_format_copy(&param->fmt, &wdi->info.fmt[0]);
 
     /* Done */
     strm->base.op = &stream_op;
-    adi->strm = strm;
+    wdi->strm = strm;
     *p_vid_strm = &strm->base;
 
     return PJ_SUCCESS;
@@ -599,20 +598,20 @@ static pj_status_t webm_dev_strm_get_frame(pjmedia_vid_dev_stream *strm,
 {
     struct webm_dev_strm *stream = (struct webm_dev_strm*)strm;
     
-    if (stream->adi->codec) {
+    if (stream->wdi->codec) {
         pjmedia_frame enc_frame;
         pj_status_t status;
 
-        enc_frame.buf = stream->adi->enc_buf;
-        enc_frame.size = stream->adi->enc_buf_size;
-        status = pjmedia_port_get_frame(stream->adi->vid, &enc_frame);
+        enc_frame.buf = stream->wdi->enc_buf;
+        enc_frame.size = stream->wdi->enc_buf_size;
+        status = pjmedia_port_get_frame(stream->wdi->vid, &enc_frame);
         if (status != PJ_SUCCESS)
             return status;
 
-        return pjmedia_vid_codec_decode(stream->adi->codec, 1, &enc_frame,
+        return pjmedia_vid_codec_decode(stream->wdi->codec, 1, &enc_frame,
                                         frame->size, frame);
     } else {
-        return pjmedia_port_get_frame(stream->adi->vid, frame);
+        return pjmedia_port_get_frame(stream->wdi->vid, frame);
     }
 }
 
@@ -650,8 +649,8 @@ static pj_status_t webm_dev_strm_destroy(pjmedia_vid_dev_stream *strm)
 
     webm_dev_strm_stop(strm);
 
-    stream->adi->strm = NULL;
-    stream->adi = NULL;
+    stream->wdi->strm = NULL;
+    stream->wdi = NULL;
     pj_pool_release(stream->pool);
 
     return PJ_SUCCESS;
